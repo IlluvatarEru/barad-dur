@@ -40,4 +40,40 @@ git commit -sm"fix: my fix"
 i.e. have a standard commit message and sign it.
 
 ## Coding Standards
-@TODO @Arthur Add coding standards
+
+### Variable and Functions Naming
+Always give meaningful names to your function:
+
+`def square(x):` is better than `def f(x):`
+
+but do not unnecessarily lengthen them:
+`def square(x):` is better than `def get_square_of_number(x):`.
+
+The same reasoning applies to variables, unless your function is very short and simple, do not use one letter variable names like `x` or `a`.
+
+Obviously, respect [PEP-8](https://realpython.com/python-pep8/).
+
+### DocStrings
+When adding docstrings to document functions, follow the below format:
+```
+def my_func(arg1, arg2):
+    """
+    Description of my_func
+    
+    :param arg1: type, description
+    :param arg2: type, description
+    :return: type, description
+    """
+```
+For example:
+```
+def square_number(x):
+    """
+    Get the square value of a number
+    
+    :param x: float, the number to get square of
+    :return: float, the squared value of x
+    """
+    return x * x
+```
+
