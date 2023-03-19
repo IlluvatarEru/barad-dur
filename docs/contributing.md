@@ -39,6 +39,13 @@ git commit -sm"fix: my fix"
 ```
 i.e. have a standard commit message and sign it.
 
+### Raising a PR
+
+In your PR description add `resolves #<issue_number>`.
+
+Always squash and merge your commits.
+
+
 ## Coding Standards
 
 ### Variable and Functions Naming
