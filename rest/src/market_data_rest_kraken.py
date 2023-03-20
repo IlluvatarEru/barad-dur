@@ -6,7 +6,7 @@ import urllib
 import pandas as pd
 
 from core.src.column_names import PRICE, TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_PRICES, ASK_SIZES, ASK_PRICES, \
-    BID_SIZES, SIZE, MISC
+    BID_SIZES, SIZE, MISC, FEES, FEES_MAKER, FEES_TAKER, RESULT, PAIR
 from core.src.date import get_current_timestamp
 from core.src.instrument_types import SPOT
 from core.src.markets import KRAKEN
@@ -128,7 +128,7 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         :return:
         """
         ticker = self.format_sym_for_market(sym)
-        ticker_info = self._query_public(method="Ticker", data={"pair": ticker}, request_type=POST)
+        ticker_info = self._query_public(method="Ticker", data={PAIR: ticker}, request_type=POST)
         return ticker_info
 
     def get_tob_bid(self, sym) -> float:
@@ -138,7 +138,7 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         """
         ticker = self.format_sym_for_market(sym)
         ticker_info = self.get_ticker_info(sym)
-        bid = ticker_info['result'][ticker]['b'][0]
+        bid = ticker_info[RESULT][ticker]['b'][0]
         return float(bid)
 
     def get_tob_ask(self, sym) -> float:
@@ -149,7 +149,7 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         """
         ticker = self.format_sym_for_market(sym)
         ticker_info = self.get_ticker_info(sym)
-        ask = ticker_info['result'][ticker]['a'][0]
+        ask = ticker_info[RESULT][ticker]['a'][0]
         return float(ask)
 
     def get_tob_mid(self, sym) -> float:
@@ -185,8 +185,8 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         """
 
         ticker = self.format_sym_for_market(sym)
-        result = self._query_public(method="Depth", data={"pair": ticker, "count": n_levels}, request_type=POST)
-        data_ob = result['result'][ticker]
+        result = self._query_public(method="Depth", data={PAIR: ticker, "count": n_levels}, request_type=POST)
+        data_ob = result[RESULT][ticker]
 
         # Convert bids and asks to DataFrames
         bids_df = pd.DataFrame(data_ob['bids'], columns=[PRICE, SIZE, TIMESTAMP])
@@ -220,10 +220,10 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         """
         fees = {}
         ticker = self.format_sym_for_market(sym)
-        result = self._query_public(method="AssetPairs", data={"pair": ticker}, request_type=POST)
-        result = result['result'][ticker]
-        fees['fees_taker'] = result['fees']
-        fees['fees_maker'] = result['fees_maker']
+        result = self._query_public(method="AssetPairs", data={PAIR: ticker}, request_type=POST)
+        result = result[RESULT][ticker]
+        fees[FEES_TAKER] = result[FEES]
+        fees[FEES_MAKER] = result[FEES_MAKER]
         fee_currency = result['fee_volume_currency']
         fees['fee_volume_currency'] = self.format_fiat_back(fee_currency)
         return fees
