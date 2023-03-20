@@ -2,6 +2,7 @@ import json
 import time
 from abc import ABC, abstractmethod
 from http import HTTPStatus
+
 import requests
 
 from rest.src.api_utils import get_header_key_col, get_header_signature_col, get_api_url
@@ -74,6 +75,9 @@ class MarketDataRestApi(ABC):
 
         # the url is composed of the base url + the route to public if any + the endpoint itself
         url = self.api_url + self.public_path + method
+        # @TODO: remove once we have a logger
+        print(f'\nurl={url}')
+        print(f'\ndata={data}')
 
         response = make_request(self.session, url, timeout, headers, data, request_type)
 
@@ -105,7 +109,7 @@ class MarketDataRestApi(ABC):
                 raise Exception('Public key is not set!')
             if not self.private_key:
                 raise Exception('Private key is not set!')
-            signature = self._sign(method_path)
+            signature = self._sign(data, method_path)
 
             headers = {
                 self.header_key_col: self.public_key,
@@ -119,11 +123,42 @@ class MarketDataRestApi(ABC):
             return self.process_error(response)
 
     @abstractmethod
-    def _sign(self, method_path):
+    def _sign(self, data, method_path):
         """
         Used to sign request to private endpoints. Each Exchange has its own method of signing
 
+        :param data: dict
         :param method_path: str
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def format_sym_for_market(self, sym):
+        """
+        Format the sym to the exchange format
+
+        :param sym: str
+        :return: str
+        """
+        pass
+
+    @abstractmethod
+    def format_crypto_back(self, sym):
+        """
+        Format the sym back from the exchange format to our standard forma
+
+        :param crypto:
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def format_fiat_back(self, fiat):
+        """
+        Format the sym back from the exchange format to our standard forma
+
+        :param fiat:
         :return:
         """
         pass
@@ -139,44 +174,59 @@ class MarketDataRestApi(ABC):
         pass
 
     @abstractmethod
-    def get_tob_bid(self) -> float:
+    def get_tob_bid(self, sym) -> float:
         """
 
+        :param sym: str
         :return: float, top of book (tob) bid price
         """
         pass
 
     @abstractmethod
-    def get_tob_ask(self) -> float:
+    def get_tob_ask(self, sym) -> float:
         """
 
+        :param sym: str
         :return: float, top of book (tob) ask price
         """
         pass
 
     @abstractmethod
-    def get_tob_mid(self) -> float:
+    def get_tob_mid(self, sym) -> float:
         """
 
+        :param sym: str
         :return: float, top of book (tob) mid price
         """
         pass
 
     @abstractmethod
-    def get_tob_spread(self) -> float:
+    def get_tob_spread(self, sym) -> float:
         """
 
+        :param sym: str
         :return: float, top of book (tob) spread
         """
         pass
 
     @abstractmethod
-    def get_orderbook(self, n_levels):
+    def get_orderbook(self, sym, n_levels):
         """
         Returns the orderbook for the first n_levels
 
+        :param sym: str
         :param n_levels: int
-        :return: an orderbook, i.e. a pd.DataFrane with columns ['timestamp', 'gateway_timestamp', 'sym', 'market',
-            'bid_sizes', 'bid_prices','offer_sizes', 'offer_prices', 'misc']
+        :return: an orderbook, i.e. a pd.DataFrane with columns [TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET,
+            BID_SIZES, BID_PRICES,ASK_SIZES, ASK_PRICES, MISC]
+        """
+        pass
+
+    @abstractmethod
+    def get_fee_schedule(self, sym):
+        """
+        Retrieves the fee schedule
+
+        :param sym: str
+        :return: dict, with keys ['fees_taker', 'fees_maker', 'fee_volume_currency']
         """
         pass

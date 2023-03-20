@@ -41,16 +41,26 @@ SUPPORTED_CCY_PAIRS = [crypto + USD for crypto in SUPPORTED_CRYPTO_CURRENCIES]
 CCY_PAIRS_VS_EUR = [USDCEUR]
 
 
-def extract_crypto_ccy_from_pair(sym):
+def split_currency_pair_into_lhs_rhs(sym):
     if sym.upper() != sym:
         warnings.warn(f'sym should always be upper case but received {sym}')
     sym = sym.upper()
     fiat = sym[-3:]
     if fiat in SUPPORTED_FIAT_CURRENCIES:
         crypto = sym[:-3]
-        return crypto
+        return crypto, fiat
     else:
         raise Exception(f'fiat not supported: {fiat} in {sym}')
+
+
+def extract_crypto_ccy_from_pair(sym):
+    crypto, _ = split_currency_pair_into_lhs_rhs(sym)
+    return crypto
+
+
+def extract_fiat_ccy_from_pair(sym):
+    _, fiat = split_currency_pair_into_lhs_rhs(sym)
+    return fiat
 
 
 def check_currency_pairs(syms, include_eur_pairs=False):
