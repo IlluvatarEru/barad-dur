@@ -5,7 +5,8 @@ import urllib
 
 import pandas as pd
 
-from core.src.column_names import PRICE, TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_PRICES, ASK_SIZES, ASK_PRICES, \
+from core.src.column_names import PRICE, MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_PRICES, ASK_SIZES, \
+    ASK_PRICES, \
     BID_SIZES, SIZE, MISC, FEES, FEES_MAKER, FEES_TAKER, RESULT, PAIR
 from core.src.date import get_current_timestamp
 from core.src.instrument_types import SPOT
@@ -84,7 +85,7 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
 
     def format_crypto_back(self, crypto):
         """
-        Format the sym back from the exchange format to our standard forma
+        Format the crypto back from the exchange format to our standard forma
 
         :param crypto:
         :return:
@@ -98,7 +99,7 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
 
     def format_fiat_back(self, fiat):
         """
-        Format the sym back from the exchange format to our standard forma
+        Format the fiat back from the exchange format to our standard forma
 
         :param fiat:
         :return:
@@ -189,9 +190,9 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         data_ob = result[RESULT][ticker]
 
         # Convert bids and asks to DataFrames
-        bids_df = pd.DataFrame(data_ob['bids'], columns=[PRICE, SIZE, TIMESTAMP])
-        asks_df = pd.DataFrame(data_ob['asks'], columns=[PRICE, SIZE, TIMESTAMP])
-        timestamps = set(bids_df[TIMESTAMP].tolist() + asks_df[TIMESTAMP].tolist())
+        bids_df = pd.DataFrame(data_ob['bids'], columns=[PRICE, SIZE, MARKET_TIMESTAMP])
+        asks_df = pd.DataFrame(data_ob['asks'], columns=[PRICE, SIZE, MARKET_TIMESTAMP])
+        timestamps = set(bids_df[MARKET_TIMESTAMP].tolist() + asks_df[MARKET_TIMESTAMP].tolist())
         last_updated_timestamp = max(timestamps)
 
         # Convert price and size columns to numeric type
@@ -205,10 +206,10 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
                           columns=[BID_SIZES, BID_PRICES, ASK_SIZES, ASK_PRICES])
         ob[SYM] = sym
         ob[MARKET] = self.market
-        ob[TIMESTAMP] = last_updated_timestamp
+        ob[MARKET_TIMESTAMP] = last_updated_timestamp
         ob[GATEWAY_TIMESTAMP] = get_current_timestamp()
         ob[MISC] = ''
-        return ob[[TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES,
+        return ob[[MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES,
                    ASK_PRICES, MISC]]
 
     def get_fee_schedule(self, sym):
@@ -222,6 +223,7 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         ticker = self.format_sym_for_market(sym)
         result = self._query_public(method="AssetPairs", data={PAIR: ticker}, request_type=POST)
         result = result[RESULT][ticker]
+        print(f'result={result}')
         fees[FEES_TAKER] = result[FEES]
         fees[FEES_MAKER] = result[FEES_MAKER]
         fee_currency = result['fee_volume_currency']

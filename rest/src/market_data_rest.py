@@ -42,7 +42,7 @@ class MarketDataRestApi(ABC):
         self.header_key_col = get_header_key_col(market, instrument_type)
         self.header_signature_col = get_header_signature_col(market, instrument_type)
 
-        # Optional, some APIs have 2 different routes for public and private querues
+        # Optional, some APIs have 2 different routes for public and private queries
         self.public_path = public_path
         self.private_path = private_path
         # Optional, if doing only public queries then it is not required
@@ -144,9 +144,9 @@ class MarketDataRestApi(ABC):
         pass
 
     @abstractmethod
-    def format_crypto_back(self, sym):
+    def format_crypto_back(self, crypto):
         """
-        Format the sym back from the exchange format to our standard forma
+        Format the crypto back from the exchange format to our standard forma
 
         :param crypto:
         :return:
@@ -156,7 +156,7 @@ class MarketDataRestApi(ABC):
     @abstractmethod
     def format_fiat_back(self, fiat):
         """
-        Format the sym back from the exchange format to our standard forma
+        Format the fiat back from the exchange format to our standard forma
 
         :param fiat:
         :return:

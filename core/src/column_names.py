@@ -1,5 +1,5 @@
 # orderbook column names
-TIMESTAMP = 'timestamp'
+MARKET_TIMESTAMP = 'market_timestamp'
 GATEWAY_TIMESTAMP = 'gateway_timestamp'
 MARKET = 'market'
 BID_SIZES = 'bid_sizes'
@@ -20,7 +20,7 @@ SIZE = 'size'
 RESULT = 'result'
 
 # fees
-FEES = 'FEES'
+FEES = 'fees'
 FEES_TAKER = 'fees_taker'
 FEES_MAKER = 'fees_maker'
 

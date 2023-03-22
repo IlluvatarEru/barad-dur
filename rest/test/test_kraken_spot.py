@@ -2,7 +2,7 @@ import os
 import unittest
 
 from core import root_folder
-from core.src.column_names import TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES, \
+from core.src.column_names import MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES, \
     ASK_PRICES, MISC
 from core.src.syms import ETHUSD, SUPPORTED_FIAT_CURRENCIES
 
@@ -34,7 +34,7 @@ class TestKrakenSpot(unittest.TestCase):
         n_levels = 3
         ob = kraken_spot_api.get_orderbook(ETHUSD, n_levels)
         self.assertEqual(ob.columns.tolist(),
-                         [TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES, ASK_PRICES,
+                         [MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES, ASK_PRICES,
                           MISC])
         self.assertEqual(len(ob), 1)
         self.assertEqual(len(ob[BID_SIZES].values[0]), n_levels)
