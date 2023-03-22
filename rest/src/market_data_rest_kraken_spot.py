@@ -1,4 +1,5 @@
 import base64
+import datetime
 import hashlib
 import hmac
 import urllib
@@ -7,8 +8,9 @@ import pandas as pd
 
 from core.src.column_names import PRICE, MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_PRICES, ASK_SIZES, \
     ASK_PRICES, \
-    BID_SIZES, SIZE, MISC, FEES, FEES_MAKER, FEES_TAKER, RESULT, PAIR
-from core.src.date import get_current_timestamp
+    BID_SIZES, SIZE, MISC, FEES, FEES_MAKER, FEES_TAKER, RESULT, PAIR, LOW, OPEN, CLOSE, HIGH, TIME, BIDS, ASKS
+from core.src.date import get_current_timestamp, today_date, MINUTES_PER_DAY, timestamp_to_date, add_days_to_date, \
+    to_date
 from core.src.instrument_types import SPOT
 from core.src.markets import KRAKEN
 from core.src.syms import split_currency_pair_into_lhs_rhs, BTC
@@ -190,8 +192,8 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         data_ob = result[RESULT][ticker]
 
         # Convert bids and asks to DataFrames
-        bids_df = pd.DataFrame(data_ob['bids'], columns=[PRICE, SIZE, MARKET_TIMESTAMP])
-        asks_df = pd.DataFrame(data_ob['asks'], columns=[PRICE, SIZE, MARKET_TIMESTAMP])
+        bids_df = pd.DataFrame(data_ob[BIDS], columns=[PRICE, SIZE, MARKET_TIMESTAMP])
+        asks_df = pd.DataFrame(data_ob[ASKS], columns=[PRICE, SIZE, MARKET_TIMESTAMP])
         timestamps = set(bids_df[MARKET_TIMESTAMP].tolist() + asks_df[MARKET_TIMESTAMP].tolist())
         last_updated_timestamp = max(timestamps)
 
@@ -208,9 +210,52 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         ob[MARKET] = self.market
         ob[MARKET_TIMESTAMP] = last_updated_timestamp
         ob[GATEWAY_TIMESTAMP] = get_current_timestamp()
+        ob[MARKET_TIMESTAMP] = ob[MARKET_TIMESTAMP].apply(
+            lambda x: datetime.datetime.fromtimestamp(x))
+        ob[GATEWAY_TIMESTAMP] = ob[GATEWAY_TIMESTAMP].apply(
+            lambda x: datetime.datetime.fromtimestamp(x))
         ob[MISC] = ''
         return ob[[MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES,
                    ASK_PRICES, MISC]]
+
+    def get_ohlc(self, sym, since=None, interval=None):
+        ticker = self.format_sym_for_market(sym)
+        data = {PAIR: ticker}
+        if since is not None:
+            data['since'] = since
+        if interval is not None:
+            data['interval'] = interval
+        result = self._query_public(method="OHLC", data=data, request_type=POST)
+        result = result[RESULT][ticker]
+        cols = [TIME, OPEN, HIGH, LOW, CLOSE, "vwap", "volume", "count"]
+        ohlc = pd.DataFrame(result, columns=cols)
+        ohlc[TIME] = ohlc[TIME].apply(lambda x: datetime.datetime.fromtimestamp(x))
+        ohlc[[OPEN, CLOSE, HIGH, LOW]] = ohlc[[OPEN, CLOSE, HIGH, LOW]].apply(pd.to_numeric)
+        return ohlc
+
+    def get_close(self, sym, d=today_date()):
+        """
+        Returns the closing price at date d for sym
+
+        :param sym: str
+        :param d: timestamp
+        :return: float
+        """
+        if type(d) == int:
+            d = timestamp_to_date(d)
+        start_date = min(today_date(), d)
+        days_720_ago = add_days_to_date(today_date(), -720)
+        if start_date < days_720_ago:
+            raise Exception(f'kraken OHLC is broken and will not be able to get data for: {start_date}')
+        ohlc = self.get_ohlc(sym, interval=MINUTES_PER_DAY)
+        ohlc[TIME] = ohlc[TIME].apply(lambda x: to_date(x))
+
+        subset = ohlc.query(f'{TIME} == @start_date')
+        if len(subset) > 0:
+            close_price = subset[CLOSE].values[0]
+        else:
+            raise Exception(f'Failed to get Kraken close for {start_date}')
+        return close_price
 
     def get_fee_schedule(self, sym):
         """
@@ -223,7 +268,6 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         ticker = self.format_sym_for_market(sym)
         result = self._query_public(method="AssetPairs", data={PAIR: ticker}, request_type=POST)
         result = result[RESULT][ticker]
-        print(f'result={result}')
         fees[FEES_TAKER] = result[FEES]
         fees[FEES_MAKER] = result[FEES_MAKER]
         fee_currency = result['fee_volume_currency']

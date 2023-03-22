@@ -15,7 +15,14 @@ ASK = 'ask'
 ASKS = 'asks'
 PRICE = 'price'
 SIZE = 'size'
+TIME = 'time'
 
+# OHLC
+
+OPEN = 'open'
+CLOSE = 'close'
+HIGH = 'high'
+LOW = 'low'
 # rest api results
 RESULT = 'result'
 

@@ -5,6 +5,7 @@ from http import HTTPStatus
 
 import requests
 
+from core.src.date import today_date
 from rest.src.api_utils import get_header_key_col, get_header_signature_col, get_api_url
 from rest.src.request_types import GET, make_request
 
@@ -12,6 +13,7 @@ from rest.src.request_types import GET, make_request
 class MarketDataRestApi(ABC):
     """
     A base class for all Market Data REST APIs
+    Child classes names should be MarketDataRestApi<Market><InstrumentType>
 
     When adding a method that should be enforced on all children, use @abstractmethod
     """
@@ -218,6 +220,29 @@ class MarketDataRestApi(ABC):
         :param n_levels: int
         :return: an orderbook, i.e. a pd.DataFrane with columns [TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET,
             BID_SIZES, BID_PRICES,ASK_SIZES, ASK_PRICES, MISC]
+        """
+        pass
+
+    @abstractmethod
+    def get_ohlc(self, sym, since=None, interval=None):
+        """
+        Returns the ohlc data from start_timestamp at window interval
+
+        :param sym: str
+        :param since: timestamp
+        :param interval: int, frequency in minutes
+        :return: a pd.DataFrame with the following columns
+        """
+        pass
+
+    @abstractmethod
+    def get_close(self, sym, d=today_date()):
+        """
+        Returns the closing price at date d for sym
+
+        :param sym: str
+        :param d: timestamp
+        :return: float
         """
         pass
 
