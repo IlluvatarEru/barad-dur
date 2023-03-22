@@ -1,5 +1,8 @@
 """
 NOTE: Please read the doc about syms before modifying anything in here
+
+Future: BTCTUSD/Future/230231
+Spot: BTCUSD
 """
 import warnings
 
@@ -30,6 +33,7 @@ SOLUSD = SOL + USD
 MATICUSD = MATIC + USD
 ADAUSD = ADA + USD
 AVAXUSD = AVAX + USD
+
 
 # Currency Pairs vs EUR
 USDCEUR = USDC + EUR

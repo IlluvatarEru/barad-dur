@@ -59,14 +59,15 @@ class MarketDataRestApi(ABC):
         """
         return int(1000 * time.time())
 
-    def _query_public(self, method, timeout=10, headers=None, data=None, request_type=GET) -> json:
+    def _query_public(self, method, timeout=10, headers=None, params=None, data=None, request_type=GET) -> json:
         """
         Used to query the public endpoints
 
         :param method:
         :param timeout:
         :param headers:
-        :param data:
+        :param params: dict, arguments for the endpoints
+        :param data:dict, data to be attached to the body
         :param request_type: str, 'GET or 'POST'
         :return:
         """
@@ -81,21 +82,22 @@ class MarketDataRestApi(ABC):
         print(f'\nurl={url}')
         print(f'\ndata={data}')
 
-        response = make_request(self.session, url, timeout, headers, data, request_type)
+        response = make_request(self.session, url, timeout, headers, params, data, request_type)
 
         if response.status_code == HTTPStatus.OK:
             return response.json()
         else:
             return self.process_error(response)
 
-    def _query_private(self, method, timeout=10, headers=None, data=None, request_type=GET):
+    def _query_private(self, method, timeout=10, headers=None, params=None, data=None, request_type=GET):
         """
         Query private information
 
         :param method:
         :param timeout:
         :param headers:
-        :param data:
+        :param params: dict, arguments for the endpoints
+        :param data:dict, data to be attached to the body
         :param request_type:
         :return:
         """
@@ -118,7 +120,7 @@ class MarketDataRestApi(ABC):
                 self.header_signature_col: signature
             }
 
-        response = make_request(self.session, url, timeout, headers, data, request_type)
+        response = make_request(self.session, url, timeout, headers, params, data, request_type)
         if response.status_code == HTTPStatus.OK:
             return response.json()
         else:
