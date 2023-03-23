@@ -13,7 +13,7 @@ from core.src.date import get_current_timestamp, today_date, MINUTES_PER_DAY, ti
     to_date
 from core.src.instrument_types import SPOT
 from core.src.markets import KRAKEN
-from core.src.syms import split_currency_pair_into_lhs_rhs, BTC
+from core.src.spot_syms import split_currency_pair_into_lhs_rhs, BTC, check_currency_pair_spot
 from rest.src.market_data_rest import MarketDataRestApi
 from rest.src.request_types import POST
 
@@ -63,9 +63,10 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         :param sym: str
         :return: str
         """
+
+        sym = check_currency_pair_spot(sym)
         # Sometimes it is XBT sometimes BTC
         # needs Z prefix before fiat and X before crypto part
-
         crypto, fiat = split_currency_pair_into_lhs_rhs(sym)
         if crypto == BTC:
             crypto = 'XBT'
@@ -262,7 +263,8 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         Retrieves the fee schedule
 
         :param sym: str
-        :return: dict, with keys ['fees_taker', 'fees_maker', 'fee_volume_currency']
+        :return: dict, with keys ['fees_taker', 'fees_maker', 'fee_volume_currency'] where each element is a list of
+         list and each sublist has 2 elements, first the usd volume and then the fee percentage
         """
         fees = {}
         ticker = self.format_sym_for_market(sym)

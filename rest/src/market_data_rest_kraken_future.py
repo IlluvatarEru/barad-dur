@@ -2,25 +2,30 @@ import base64
 import datetime
 import hashlib
 import hmac
-import urllib
 
 import pandas as pd
 
 from core.src.column_names import PRICE, MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_PRICES, ASK_SIZES, \
     ASK_PRICES, \
-    BID_SIZES, SIZE, MISC, FEES, FEES_MAKER, FEES_TAKER, RESULT, PAIR, LOW, OPEN, CLOSE, HIGH, TIME, BIDS, ASKS, SYMBOL
-from core.src.date import get_current_timestamp, today_date, MINUTES_PER_DAY, timestamp_to_date, add_days_to_date, \
-    to_date
-from core.src.instrument_types import SPOT, FUTURE
+    BID_SIZES, SIZE, MISC, FEES_MAKER, FEES_TAKER, PAIR, LOW, OPEN, CLOSE, HIGH, TIME, BIDS, ASKS, SYMBOL
+from core.src.date import get_current_timestamp, today_date, to_date
+from core.src.future_syms import FUT_, check_currency_pair_future
+from core.src.instrument_types import FUTURE
 from core.src.markets import KRAKEN
-from core.src.syms import split_currency_pair_into_lhs_rhs, BTC
+from core.src.spot_syms import USD
 from rest.src.market_data_rest import MarketDataRestApi
 from rest.src.request_types import POST, GET
+
+# Kraken Future API uses 3 different endpoints
+# see https://docs.futures.kraken.com/#introduction-api-urls
+DERIVATIVES_API = "derivatives/api/v3/"
+HISTORY_API = "api/history/v2/"
+CHART_API = "api/charts/v1/"
 
 
 class MarketDataRestApiKrakenFuture(MarketDataRestApi):
     """
-    A base class for Kraken Spot Api
+    Kraken Future Api
     """
 
     def __init__(self,
@@ -68,13 +73,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param sym: str
         :return: str
         """
-        # Sometimes it is XBT sometimes BTC
-        # needs Z prefix before fiat and X before crypto part
-
-        crypto, fiat = split_currency_pair_into_lhs_rhs(sym)
-        if crypto == BTC:
-            crypto = 'XBT'
-        sym = "X" + crypto + "Z" + fiat
+        check_currency_pair_future(sym)
+        sym = sym.replace(FUT_, "FI_")
         return sym
 
     def format_sym_back(self, sym):
@@ -145,8 +145,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :return: float, top of book (tob) bid price
         """
         ticker = self.format_sym_for_market(sym)
-        ticker_info = self.get_ticker_info(sym)
-        bid = ticker_info[RESULT][ticker]['b'][0]
+        ob = self.get_orderbook(sym, 1)
+        bid = ob[BID_PRICES].values[0][0]
         return float(bid)
 
     def get_tob_ask(self, sym) -> float:
@@ -155,9 +155,9 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param sym: str
         :return: float, top of book (tob) ask price
         """
-        ticker = self.format_sym_for_market(sym)
-        ticker_info = self.get_ticker_info(sym)
-        ask = ticker_info[RESULT][ticker]['a'][0]
+        # ticker = self.format_sym_for_market(sym)
+        ob = self.get_orderbook(sym, 1)
+        ask = ob[ASK_PRICES].values[0][0]
         return float(ask)
 
     def get_tob_mid(self, sym) -> float:
@@ -192,8 +192,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
             BID_SIZES, BID_PRICES,ASK_SIZES, ASK_PRICES, MISC]
         """
 
-        ticker = sym  # self.format_sym_for_market(sym)
-        result = self._query_public(method="orderbook", params={SYMBOL: ticker}, request_type=GET)
+        ticker = self.format_sym_for_market(sym)
+        result = self._query_public(method=DERIVATIVES_API + "orderbook", params={SYMBOL: ticker}, request_type=GET)
         print(result)
         data_ob = result['orderBook']
         timestamp = result['serverTime']
@@ -223,17 +223,14 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
                    ASK_PRICES, MISC]]
 
     def get_ohlc(self, sym, since=None, interval=None):
-        ticker = self.format_sym_for_market(sym)
-        data = {PAIR: ticker}
-        if since is not None:
-            data['since'] = since
         if interval is not None:
-            data['interval'] = interval
-        result = self._query_public(method="OHLC", data=data, request_type=POST)
-        result = result[RESULT][ticker]
+            raise Exception("Kraken Future OHLC method cannot look back.")
+        ticker = self.format_sym_for_market(sym)
+        result = self._query_public(method=CHART_API + "mark/" + ticker + '/1d', request_type=GET)
+        result = result['candles']
         cols = [TIME, OPEN, HIGH, LOW, CLOSE, "vwap", "volume", "count"]
         ohlc = pd.DataFrame(result, columns=cols)
-        ohlc[TIME] = ohlc[TIME].apply(lambda x: datetime.datetime.fromtimestamp(x))
+        ohlc[TIME] = ohlc[TIME].apply(lambda x: datetime.datetime.fromtimestamp(x / 1000))
         ohlc[[OPEN, CLOSE, HIGH, LOW]] = ohlc[[OPEN, CLOSE, HIGH, LOW]].apply(pd.to_numeric)
         return ohlc
 
@@ -245,13 +242,10 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param d: timestamp
         :return: float
         """
-        if type(d) == int:
-            d = timestamp_to_date(d)
-        start_date = min(today_date(), d)
-        days_720_ago = add_days_to_date(today_date(), -720)
-        if start_date < days_720_ago:
-            raise Exception(f'kraken OHLC is broken and will not be able to get data for: {start_date}')
-        ohlc = self.get_ohlc(sym, interval=MINUTES_PER_DAY)
+        if d != today_date():
+            raise Exception("Kraken Future OHLC method cannot look back.")
+        start_date = today_date()
+        ohlc = self.get_ohlc(sym)
         ohlc[TIME] = ohlc[TIME].apply(lambda x: to_date(x))
 
         subset = ohlc.query(f'{TIME} == @start_date')
@@ -266,14 +260,23 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         Retrieves the fee schedule
 
         :param sym: str
-        :return: dict, with keys ['fees_taker', 'fees_maker', 'fee_volume_currency']
+        :return: dict, with keys ['fees_taker', 'fees_maker', 'fee_volume_currency'] where each element is a list of
+         list and each sublist has 2 elements, first the usd volume and then the fee percentage
         """
-        fees = {}
-        ticker = self.format_sym_for_market(sym)
-        result = self._query_public(method="AssetPairs", data={PAIR: ticker}, request_type=POST)
-        result = result[RESULT][ticker]
-        fees[FEES_TAKER] = result[FEES]
-        fees[FEES_MAKER] = result[FEES_MAKER]
-        fee_currency = result['fee_volume_currency']
-        fees['fee_volume_currency'] = self.format_fiat_back(fee_currency)
+        result = self._query_public(method=DERIVATIVES_API + "feeschedules/", request_type=GET)
+        result = result["feeSchedules"]
+        main_fee_schedule = {}
+        for r in result:
+            print(r["name"])
+            if r["name"] == "Tiered fees":
+                main_fee_schedule = r
+        main_fee_schedule = main_fee_schedule["tiers"]
+        fees = {FEES_TAKER: [], FEES_MAKER: []}
+        json_data = main_fee_schedule
+
+        for fee in json_data:
+            fees[FEES_TAKER].append([fee['usdVolume'], fee['takerFee']])
+            fees[FEES_MAKER].append([fee['usdVolume'], fee['makerFee']])
+
+        fees['fee_volume_currency'] = USD
         return fees

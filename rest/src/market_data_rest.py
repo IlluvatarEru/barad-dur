@@ -80,6 +80,7 @@ class MarketDataRestApi(ABC):
         url = self.api_url + self.public_path + method
         # @TODO: remove once we have a logger
         print(f'\nurl={url}')
+        print(f'\nparams={params}')
         print(f'\ndata={data}')
 
         response = make_request(self.session, url, timeout, headers, params, data, request_type)
@@ -254,6 +255,7 @@ class MarketDataRestApi(ABC):
         Retrieves the fee schedule
 
         :param sym: str
-        :return: dict, with keys ['fees_taker', 'fees_maker', 'fee_volume_currency']
+        :return: dict, with keys ['fees_taker', 'fees_maker', 'fee_volume_currency'] where each element is a list of
+         list and each sublist has 2 elements, first the usd volume and then the fee percentage
         """
         pass

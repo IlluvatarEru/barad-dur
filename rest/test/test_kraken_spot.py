@@ -6,7 +6,7 @@ from core import root_folder
 from core.src.column_names import MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES, \
     ASK_PRICES, MISC, HIGH, LOW, OPEN, CLOSE, TIME
 from core.src.date import today_date, MINUTES_PER_DAY
-from core.src.syms import ETHUSD, SUPPORTED_FIAT_CURRENCIES
+from core.src.spot_syms import ETHUSD, SUPPORTED_FIAT_CURRENCIES
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 root_folder.ROOT_FOLDER = dir_path + '/../../'
@@ -15,6 +15,20 @@ from rest.src.market_data_rest_kraken_spot import MarketDataRestApiKrakenSpot
 
 
 class TestKrakenSpot(unittest.TestCase):
+
+    def test_wrong_sym_is_detected(self):
+        kraken_future_api = MarketDataRestApiKrakenSpot()
+        wrong_sym = "ETH-USD"
+        with self.assertRaises(Exception) as context:
+            tob_bid = kraken_future_api.get_tob_bid(wrong_sym)
+        self.assertEqual(str(context.exception).split(":")[0],
+                         "('Unsupported currency pair")
+
+        wrong_sym = "WWWUSD"
+        with self.assertRaises(Exception) as context:
+            tob_bid = kraken_future_api.get_tob_bid(wrong_sym)
+        self.assertEqual(str(context.exception).split(":")[0],
+                         "('Unsupported currency pair")
 
     def test_tob_prices(self):
         kraken_spot_api = MarketDataRestApiKrakenSpot()
