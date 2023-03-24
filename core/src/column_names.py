@@ -33,4 +33,5 @@ FEES_MAKER = 'fees_maker'
 
 # sym related
 SYM = 'sym'
+SYMBOL='symbol'
 PAIR = 'pair'

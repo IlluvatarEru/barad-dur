@@ -1,5 +1,8 @@
 """
 NOTE: Please read the doc about syms before modifying anything in here
+
+Future: BTCTUSD/Future/230231
+Spot: BTCUSD
 """
 import warnings
 
@@ -18,6 +21,9 @@ SOL = 'SOL'
 MATIC = 'MATIC'
 ADA = 'ADA'
 AVAX = 'AVAX'
+XRP = "XRP"
+LTC = "LTC"
+BCH = "BCH"
 
 # Currency Pairs vs USD
 ETHUSD = ETH + USD
@@ -30,11 +36,14 @@ SOLUSD = SOL + USD
 MATICUSD = MATIC + USD
 ADAUSD = ADA + USD
 AVAXUSD = AVAX + USD
+XRPUSD = XRP + USD
+LTCUSD = LTC + USD
+BCHUSD = BCH + USD
 
 # Currency Pairs vs EUR
 USDCEUR = USDC + EUR
 USDTEUR = USDT + EUR
-SUPPORTED_CRYPTO_CURRENCIES = [ETH, STETH, BTC, USDC, USDT, NEAR, SOL, MATIC, ADA, AVAX]
+SUPPORTED_CRYPTO_CURRENCIES = [ETH, STETH, BTC, USDC, USDT, NEAR, SOL, MATIC, ADA, AVAX, XRP, LTC, BCH]
 SUPPORTED_FIAT_CURRENCIES = [USD, EUR]
 SUPPORTED_CURRENCIES = SUPPORTED_CRYPTO_CURRENCIES + SUPPORTED_FIAT_CURRENCIES
 SUPPORTED_CCY_PAIRS = [crypto + USD for crypto in SUPPORTED_CRYPTO_CURRENCIES]
@@ -65,15 +74,14 @@ def extract_fiat_ccy_from_pair(sym):
 
 def check_currency_pairs(syms, include_eur_pairs=False):
     syms = syms.split("-")
-    print(f'\n\n{syms}\n\n')
     formatted_syms = []
     for sym in syms:
-        formatted_sym = check_currency_pair(sym, include_eur_pairs)
+        formatted_sym = check_currency_pair_spot(sym, include_eur_pairs)
         formatted_syms.append(formatted_sym)
     return formatted_syms
 
 
-def check_currency_pair(sym, include_eur_pairs=False):
+def check_currency_pair_spot(sym, include_eur_pairs=False):
     sym = sym.upper()
     supported_pairs = SUPPORTED_CCY_PAIRS + CCY_PAIRS_VS_EUR if include_eur_pairs else SUPPORTED_CCY_PAIRS
     if sym not in supported_pairs:
