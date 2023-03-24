@@ -64,7 +64,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         hmac_digest = hmac.new(secretDecoded, hash_digest, hashlib.sha512).digest()
 
         # step 5: base64 encode the result of step 4 and return
-        return base64.b64encode(hmac_digest)
+        signature = base64.b64encode(hmac_digest)
+        return signature
 
     def format_sym_for_market(self, sym):
         """
@@ -88,7 +89,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         fiat = sym[-3:]
         fiat = self.format_fiat_back(sym)
         crypto = self.format_crypto_back(sym[:-4])
-        return crypto + fiat
+        ccy = crypto + fiat
+        return ccy
 
     def format_crypto_back(self, crypto):
         """
@@ -147,7 +149,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         ticker = self.format_sym_for_market(sym)
         ob = self.get_orderbook(sym, 1)
         bid = ob[BID_PRICES].values[0][0]
-        return float(bid)
+        bid=float(bid)
+        return bid
 
     def get_tob_ask(self, sym) -> float:
         """
@@ -158,7 +161,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         # ticker = self.format_sym_for_market(sym)
         ob = self.get_orderbook(sym, 1)
         ask = ob[ASK_PRICES].values[0][0]
-        return float(ask)
+        ask = float(ask)
+        return ask
 
     def get_tob_mid(self, sym) -> float:
         """
@@ -194,7 +198,6 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
 
         ticker = self.format_sym_for_market(sym)
         result = self._query_public(method=DERIVATIVES_API + "orderbook", params={SYMBOL: ticker}, request_type=GET)
-        print(result)
         data_ob = result['orderBook']
         timestamp = result['serverTime']
         format_string = "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -219,8 +222,9 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         ob[GATEWAY_TIMESTAMP] = ob[GATEWAY_TIMESTAMP].apply(
             lambda x: datetime.datetime.fromtimestamp(x))
         ob[MISC] = ''
-        return ob[[MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES,
+        ob = ob[[MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES,
                    ASK_PRICES, MISC]]
+        return ob
 
     def get_ohlc(self, sym, since=None, interval=None):
         if interval is not None:
@@ -267,7 +271,6 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         result = result["feeSchedules"]
         main_fee_schedule = {}
         for r in result:
-            print(r["name"])
             if r["name"] == "Tiered fees":
                 main_fee_schedule = r
         main_fee_schedule = main_fee_schedule["tiers"]

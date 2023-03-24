@@ -49,7 +49,6 @@ class TestKrakenSpot(unittest.TestCase):
         kraken_spot_api = MarketDataRestApiKrakenSpot()
         n_levels = 3
         ob = kraken_spot_api.get_orderbook(ETHUSD, n_levels)
-        print(ob)
         self.assertEqual(ob.columns.tolist(),
                          [MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES,
                           ASK_PRICES,

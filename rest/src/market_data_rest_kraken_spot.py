@@ -53,8 +53,8 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         signature = hmac.new(base64.b64decode(self.private_key),
                              message, hashlib.sha512)
         sig_digest = base64.b64encode(signature.digest())
-
-        return sig_digest.decode()
+        signature = sig_digest.decode()
+        return signature
 
     def format_sym_for_market(self, sym):
         """
@@ -84,7 +84,8 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         fiat = sym[-3:]
         fiat = self.format_fiat_back(sym)
         crypto = self.format_crypto_back(sym[:-4])
-        return crypto + fiat
+        ccy = crypto + fiat
+        return ccy
 
     def format_crypto_back(self, crypto):
         """
@@ -143,7 +144,8 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         ticker = self.format_sym_for_market(sym)
         ticker_info = self.get_ticker_info(sym)
         bid = ticker_info[RESULT][ticker]['b'][0]
-        return float(bid)
+        bid = float(bid)
+        return bid
 
     def get_tob_ask(self, sym) -> float:
         """
@@ -154,7 +156,8 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         ticker = self.format_sym_for_market(sym)
         ticker_info = self.get_ticker_info(sym)
         ask = ticker_info[RESULT][ticker]['a'][0]
-        return float(ask)
+        ask = float(ask)
+        return ask
 
     def get_tob_mid(self, sym) -> float:
         """
@@ -216,8 +219,8 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         ob[GATEWAY_TIMESTAMP] = ob[GATEWAY_TIMESTAMP].apply(
             lambda x: datetime.datetime.fromtimestamp(x))
         ob[MISC] = ''
-        return ob[[MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES,
-                   ASK_PRICES, MISC]]
+        ob = ob[[MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES, ASK_PRICES, MISC]]
+        return ob
 
     def get_ohlc(self, sym, since=None, interval=None):
         ticker = self.format_sym_for_market(sym)

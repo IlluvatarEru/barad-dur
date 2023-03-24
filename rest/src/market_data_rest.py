@@ -57,7 +57,8 @@ class MarketDataRestApi(ABC):
         Nonce counter.
         :returns: int, an always-increasing unsigned integer (up to 64 bits wide)
         """
-        return int(1000 * time.time())
+        nonce = int(1000 * time.time())
+        return nonce
 
     def _query_public(self, method, timeout=10, headers=None, params=None, data=None, request_type=GET) -> json:
         """
@@ -86,9 +87,10 @@ class MarketDataRestApi(ABC):
         response = make_request(self.session, url, timeout, headers, params, data, request_type)
 
         if response.status_code == HTTPStatus.OK:
-            return response.json()
+            result = response.json()
         else:
-            return self.process_error(response)
+            result = self.process_error(response)
+        return result
 
     def _query_private(self, method, timeout=10, headers=None, params=None, data=None, request_type=GET):
         """
@@ -123,9 +125,10 @@ class MarketDataRestApi(ABC):
 
         response = make_request(self.session, url, timeout, headers, params, data, request_type)
         if response.status_code == HTTPStatus.OK:
-            return response.json()
+            result = response.json()
         else:
-            return self.process_error(response)
+            result = self.process_error(response)
+        return result
 
     @abstractmethod
     def _sign(self, data, method_path):

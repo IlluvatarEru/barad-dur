@@ -74,7 +74,6 @@ def extract_fiat_ccy_from_pair(sym):
 
 def check_currency_pairs(syms, include_eur_pairs=False):
     syms = syms.split("-")
-    print(f'\n\n{syms}\n\n')
     formatted_syms = []
     for sym in syms:
         formatted_sym = check_currency_pair_spot(sym, include_eur_pairs)
