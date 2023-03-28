@@ -1,8 +1,8 @@
 import pandas as pd
 
 from core.src.exceptions import raise_instrument_type_not_supported_for_market_exception, raise_market_not_supported
-from core.src.instrument_types import SPOT, FUTURE
-from core.src.markets import KRAKEN
+from core.src.instrument_types import SPOT, FUTURE, OPTION
+from core.src.markets import KRAKEN, BINANCE
 from core.src.constants import PATH_TO_DATA
 
 
@@ -26,6 +26,9 @@ def get_header_key_col(market, instrument_type):
         else:
             raise_instrument_type_not_supported_for_market_exception(instrument_type, market)
     # @TODO @Yves: Add other markets
+    if market == BINANCE:
+        if instrument_type in [SPOT,FUTURE, OPTION]:
+            return 'X-MBX-APIKEY'
     else:
         raise_market_not_supported(market)
 
