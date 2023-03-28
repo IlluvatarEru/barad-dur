@@ -17,23 +17,23 @@ FUT_LTCUSD_ = FUT_ + LTCUSD + "_"
 FUT_BCHUSD_ = FUT_ + BCHUSD + "_"
 
 
-def raise_wrong_future_format(sym):
+def raise_wrong_format_future(sym):
     raise Exception(f'Future {sym} has wrong format, it should be FUT_LHSRHS_YYMMDD')
 
 
 def check_currency_pair_future(sym):
     pattern = re.compile("_")
     if len(pattern.findall(sym)) != 2:
-        raise_wrong_future_format(sym)
+        raise_wrong_format_future(sym)
     if sym[:4] != FUT_:
-        raise_wrong_future_format(sym)
+        raise_wrong_format_future(sym)
     spot = sym.split("_")[1]
     if spot not in SUPPORTED_CCY_PAIRS:
         raise Exception(f'Future {sym} has wrong format, currency pair {spot} not supported')
     return True
 
 
-def get_future_expiry(sym):
+def get_expiry_future(sym):
     check_currency_pair_future(sym)
     expiry = sym.split("_")[-1]
     # it should have this format: YYMMDD

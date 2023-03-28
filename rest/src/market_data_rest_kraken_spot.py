@@ -122,6 +122,7 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         :param response: session.response
         :return:
         """
+        # @TODO: not needed for now, implement later
         pass
 
     def get_ticker_info(self, sym):

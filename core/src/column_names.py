@@ -16,6 +16,7 @@ ASKS = 'asks'
 PRICE = 'price'
 SIZE = 'size'
 TIME = 'time'
+TIMESTAMP = 'timestamp'
 
 # OHLC
 
@@ -33,5 +34,5 @@ FEES_MAKER = 'fees_maker'
 
 # sym related
 SYM = 'sym'
-SYMBOL='symbol'
+SYMBOL = 'symbol'
 PAIR = 'pair'

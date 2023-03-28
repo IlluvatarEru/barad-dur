@@ -2,35 +2,32 @@ import base64
 import datetime
 import hashlib
 import hmac
+import urllib
 
 import pandas as pd
 
 from core.src.column_names import PRICE, MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_PRICES, ASK_SIZES, \
     ASK_PRICES, \
-    BID_SIZES, SIZE, MISC, FEES_MAKER, FEES_TAKER, LOW, OPEN, CLOSE, HIGH, TIME, BIDS, ASKS, SYMBOL
-from core.src.date import get_current_timestamp, today_date, to_date
-from core.src.future_syms import FUT_, check_currency_pair_future
-from core.src.instrument_types import FUTURE
-from core.src.markets import KRAKEN
-from core.src.spot_syms import USD
+    BID_SIZES, SIZE, MISC, RESULT, BIDS, ASKS, \
+    TIMESTAMP, OPEN, CLOSE, HIGH, LOW, TIME
+from core.src.date import get_current_timestamp, today_date, convert_expiry_to_deribit_format, to_date, \
+    get_yesterday_timestamp, date_to_timestamp
+from core.src.instrument_types import OPTION
+from core.src.markets import DERIBIT
+from core.src.option_syms import check_currency_pair_option
+from core.src.spot_syms import split_currency_pair_into_lhs_rhs
 from rest.src.market_data_rest import MarketDataRestApi
 from rest.src.request_types import GET
 
-# Kraken Future API uses 3 different endpoints
-# see https://docs.futures.kraken.com/#introduction-api-urls
-DERIVATIVES_API = "derivatives/api/v3/"
-HISTORY_API = "api/history/v2/"
-CHART_API = "api/charts/v1/"
 
-
-class MarketDataRestApiKrakenFuture(MarketDataRestApi):
+class MarketDataRestApiDeribitOption(MarketDataRestApi):
     """
-    Kraken Future Api
+    A base class for Deribit Option Api
     """
 
     def __init__(self,
-                 public_path='/',
-                 private_path='/',
+                 public_path='public/',
+                 private_path='private/',
                  public_key=None,
                  private_key=None):
         """
@@ -40,7 +37,7 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param public_key:
         :param private_key:
         """
-        super().__init__(KRAKEN, FUTURE, public_path, private_path, public_key, private_key)
+        super().__init__(DERIBIT, OPTION, public_path, private_path, public_key, private_key)
 
     def _sign(self, data, url_path):
         """
@@ -49,23 +46,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param url_path: str, API URL path sans host
         :returns: signature digest
         """
-        nonce = self._nonce()
-        message = data + nonce + url_path
-
-        # step 2: hash the result of step 1 with SHA256
-        sha256_hash = hashlib.sha256()
-        sha256_hash.update(message.encode('utf8'))
-        hash_digest = sha256_hash.digest()
-
-        # step 3: base64 decode private_key
-        secretDecoded = base64.b64decode(self.private_key)
-
-        # step 4: use result of step 3 to has the result of step 2 with HMAC-SHA512
-        hmac_digest = hmac.new(secretDecoded, hash_digest, hashlib.sha512).digest()
-
-        # step 5: base64 encode the result of step 4 and return
-        signature = base64.b64encode(hmac_digest)
-        return signature
+        # @TODO: not needed for now, implement later
+        pass
 
     def format_sym_for_market(self, sym):
         """
@@ -74,8 +56,12 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param sym: str
         :return: str
         """
-        check_currency_pair_future(sym)
-        sym = sym.replace(FUT_, "FI_")
+        # From: C_ETHUSD_230630_1200
+        # To: 'ETH-26MAY23-1200-C'
+        check_currency_pair_option(sym)
+        option_type, sym, expiry, strike = sym.split("_")
+        lhs, rhs = split_currency_pair_into_lhs_rhs(sym)
+        sym = "-".join([lhs, convert_expiry_to_deribit_format(expiry), strike, option_type])
         return sym
 
     def format_sym_back(self, sym):
@@ -85,12 +71,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param sym:
         :return:
         """
-        # fiat is always 3 letters
-        fiat = sym[-3:]
-        fiat = self.format_fiat_back(sym)
-        crypto = self.format_crypto_back(sym[:-4])
-        ccy = crypto + fiat
-        return ccy
+        # @TODO: not needed for now, implement later
+        pass
 
     def format_crypto_back(self, crypto):
         """
@@ -99,12 +81,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param crypto:
         :return:
         """
-        if len(crypto) == 3:
-            return crypto
-        elif crypto[0] == 'X':
-            return crypto[1:]
-        else:
-            raise Exception(f'Failed to convert back to fiat: {crypto}')
+        # @TODO: not needed for now, implement later
+        pass
 
     def format_fiat_back(self, fiat):
         """
@@ -113,12 +91,8 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param fiat:
         :return:
         """
-        if len(fiat) == 3:
-            return fiat
-        elif fiat[0] == 'Z':
-            return fiat[1:]
-        else:
-            raise Exception(f'Failed to convert back to fiat: {fiat}')
+        # @TODO: not needed for now, implement later
+        pass
 
     def process_error(self, response):
         """
@@ -127,7 +101,6 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param response: session.response
         :return:
         """
-
         # @TODO: not needed for now, implement later
         pass
 
@@ -136,7 +109,6 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
 
         :return: float, top of book (tob) bid price
         """
-        ticker = self.format_sym_for_market(sym)
         ob = self.get_orderbook(sym, 1)
         bid = ob[BID_PRICES].values[0][0]
         bid = float(bid)
@@ -186,14 +158,14 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         """
 
         ticker = self.format_sym_for_market(sym)
-        result = self._query_public(method=DERIVATIVES_API + "orderbook", params={SYMBOL: ticker}, request_type=GET)
-        data_ob = result['orderBook']
-        timestamp = result['serverTime']
-        format_string = "%Y-%m-%dT%H:%M:%S.%fZ"
-        timestamp = datetime.datetime.strptime(timestamp, format_string)
+        result = self._query_public(method="get_order_book", params={'instrument_name': ticker, "depth": n_levels},
+                                    request_type=GET)
+        data_ob = result[RESULT]
+
         # Convert bids and asks to DataFrames
         bids_df = pd.DataFrame(data_ob[BIDS], columns=[PRICE, SIZE])
         asks_df = pd.DataFrame(data_ob[ASKS], columns=[PRICE, SIZE])
+        last_updated_timestamp = data_ob[TIMESTAMP]
 
         # Convert price and size columns to numeric type
         bids_df[[PRICE, SIZE]] = bids_df[[PRICE, SIZE]].apply(pd.to_numeric)
@@ -206,13 +178,14 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
                           columns=[BID_SIZES, BID_PRICES, ASK_SIZES, ASK_PRICES])
         ob[SYM] = sym
         ob[MARKET] = self.market
-        ob[MARKET_TIMESTAMP] = timestamp
+        ob[MARKET_TIMESTAMP] = last_updated_timestamp
         ob[GATEWAY_TIMESTAMP] = get_current_timestamp()
+        ob[MARKET_TIMESTAMP] = ob[MARKET_TIMESTAMP].apply(
+            lambda x: datetime.datetime.fromtimestamp(int(x) / 1000))
         ob[GATEWAY_TIMESTAMP] = ob[GATEWAY_TIMESTAMP].apply(
             lambda x: datetime.datetime.fromtimestamp(x))
         ob[MISC] = ''
-        ob = ob[[MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES,
-                 ASK_PRICES, MISC]]
+        ob = ob[[MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES, ASK_PRICES, MISC]]
         return ob
 
     def get_ohlc(self, sym, since=None, interval=None):
@@ -224,15 +197,26 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param interval: int, frequency in minutes
         :return: a pd.DataFrame with the following columns
         """
-        if interval is not None:
-            raise Exception("Kraken Future OHLC method cannot look back.")
+        if interval is None:
+            interval = "1D"
+        if since is None:
+            since = get_yesterday_timestamp()
+        elif type(since) != int:
+            since = since + datetime.timedelta(days=1)
+            since = date_to_timestamp(since)
         ticker = self.format_sym_for_market(sym)
-        result = self._query_public(method=CHART_API + "mark/" + ticker + '/1d', request_type=GET)
-        result = result['candles']
-        cols = [TIME, OPEN, HIGH, LOW, CLOSE, "vwap", "volume", "count"]
-        ohlc = pd.DataFrame(result, columns=cols)
-        ohlc[TIME] = ohlc[TIME].apply(lambda x: datetime.datetime.fromtimestamp(x / 1000))
+        end_timestamp = int(get_current_timestamp() * 1000)
+        result = self._query_public(method="get_tradingview_chart_data", params={'instrument_name': ticker,
+                                                                                 "start_timestamp": since,
+                                                                                 "end_timestamp": end_timestamp,
+                                                                                 "resolution": interval},
+                                    request_type=GET)
+        result = result[RESULT]
+        ohlc = pd.DataFrame.from_dict(result)
         ohlc[[OPEN, CLOSE, HIGH, LOW]] = ohlc[[OPEN, CLOSE, HIGH, LOW]].apply(pd.to_numeric)
+        ohlc = ohlc.rename(columns={"ticks": TIME})
+        ohlc[TIME] = ohlc[TIME].apply(lambda x: datetime.datetime.fromtimestamp(x / 1000))
+        ohlc = ohlc[[TIME, OPEN, CLOSE, HIGH, LOW]]
         return ohlc
 
     def get_close(self, sym, d=today_date()):
@@ -243,17 +227,18 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param d: timestamp
         :return: float
         """
-        if d != today_date():
-            raise Exception("Kraken Future OHLC method cannot look back.")
-        start_date = today_date()
-        ohlc = self.get_ohlc(sym)
+        if type(d) != int:
+            d = date_to_timestamp(d)
+        start_date_timestamp = int(min(get_current_timestamp(), d))
+        start_date = to_date(start_date_timestamp * 1000)
+        ohlc = self.get_ohlc(sym, since=start_date_timestamp)
         ohlc[TIME] = ohlc[TIME].apply(lambda x: to_date(x))
 
         subset = ohlc.query(f'{TIME} == @start_date')
         if len(subset) > 0:
             close_price = subset[CLOSE].values[0]
         else:
-            raise Exception(f'Failed to get Kraken close for {start_date}')
+            raise Exception(f'Failed to get Deribit close for {start_date}')
         return close_price
 
     def get_fee_schedule(self, sym):
@@ -264,19 +249,5 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :return: dict, with keys ['fees_taker', 'fees_maker', 'fee_volume_currency'] where each element is a list of
          list and each sublist has 2 elements, first the usd volume and then the fee percentage
         """
-        result = self._query_public(method=DERIVATIVES_API + "feeschedules/", request_type=GET)
-        result = result["feeSchedules"]
-        main_fee_schedule = {}
-        for r in result:
-            if r["name"] == "Tiered fees":
-                main_fee_schedule = r
-        main_fee_schedule = main_fee_schedule["tiers"]
-        fees = {FEES_TAKER: [], FEES_MAKER: []}
-        json_data = main_fee_schedule
 
-        for fee in json_data:
-            fees[FEES_TAKER].append([fee['usdVolume'], fee['takerFee']])
-            fees[FEES_MAKER].append([fee['usdVolume'], fee['makerFee']])
-
-        fees['fee_volume_currency'] = USD
-        return fees
+        raise Exception(f'This method is not supported for {self.market}/{self.instrument_type}')

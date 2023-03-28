@@ -6,6 +6,18 @@ from dateutil.utils import today
 MINUTES_PER_DAY = 24 * 60
 
 
+def convert_expiry_to_deribit_format(date_string):
+    month_dict = {'01': 'JAN', '02': 'FEB', '03': 'MAR', '04': 'APR', '05': 'MAY',
+                  '06': 'JUN', '07': 'JUL', '08': 'AUG', '09': 'SEP', '10': 'OCT',
+                  '11': 'NOV', '12': 'DEC'}
+
+    year = date_string[:2]
+    month = month_dict[date_string[2:4]]
+    day = date_string[4:]
+
+    return day + month + year
+
+
 def get_current_timestamp():
     """
     get the current timestamp in micro seconds
@@ -13,6 +25,12 @@ def get_current_timestamp():
     """
     # this is a float with the micros after the decimal so multiply by 1000000
     return datetime.datetime.now().timestamp()
+
+
+def get_yesterday_timestamp():
+    yesterday = datetime.datetime.now() - datetime.timedelta(days=2)
+    midnight = datetime.datetime.combine(yesterday, datetime.time.min)
+    return int(midnight.timestamp())
 
 
 def today_date():
