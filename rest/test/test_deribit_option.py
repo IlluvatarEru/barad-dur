@@ -10,7 +10,6 @@ root_folder.ROOT_FOLDER = dir_path + '/../../'
 
 from core.src.column_names import MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES, \
     ASK_PRICES, MISC, TIME, OPEN, CLOSE, HIGH, LOW
-from core.src.spot_syms import SUPPORTED_FIAT_CURRENCIES
 from rest.src.market_data_rest_deribit_option import MarketDataRestApiDeribitOption
 
 # INSTRUMENT = 'ETH-26MAY23-1200-C'
