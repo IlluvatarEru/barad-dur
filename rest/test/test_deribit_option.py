@@ -106,4 +106,4 @@ class TestDeribitOption(unittest.TestCase):
 
         start_date = datetime.date(2023, 1, 1)
         close_price = deribit_option_api.get_close(INSTRUMENT, start_date)
-        self.assertEqual(close_price, 0.32)
+        self.assertEqual(close_price, 0.198)

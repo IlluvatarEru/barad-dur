@@ -234,11 +234,11 @@ class MarketDataRestApiDeribitOption(MarketDataRestApi):
         ohlc = self.get_ohlc(sym, since=start_date_timestamp)
         ohlc[TIME] = ohlc[TIME].apply(lambda x: to_date(x))
 
-        subset = ohlc.query(f'{TIME} == @start_date')
+        subset = ohlc.loc[ohlc[TIME] == to_date(d)]
         if len(subset) > 0:
             close_price = subset[CLOSE].values[0]
         else:
-            raise Exception(f'Failed to get Deribit close for {start_date}')
+            raise Exception(f'Failed to get Deribit close for {to_date(d)}')
         return close_price
 
     def get_fee_schedule(self, sym):
