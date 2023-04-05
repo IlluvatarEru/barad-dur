@@ -19,6 +19,13 @@ INSTRUMENT = 'C_ETHUSD_230630_1200'
 
 class TestDeribitOption(unittest.TestCase):
 
+    def test_op(self):
+        deribit_option_api = MarketDataRestApiDeribitOption()
+        tob_bid = deribit_option_api.get_tob_bid('C_ETHUSD_230428_1000')
+        tob_ask = deribit_option_api.get_tob_ask('C_ETHUSD_230428_1000')
+        tob_mid = deribit_option_api.get_tob_mid('C_ETHUSD_230428_1000')
+        print(tob_bid, tob_mid, tob_ask)
+
     def test_wrong_sym_is_detected(self):
         deribit_option_api = MarketDataRestApiDeribitOption()
         wrong_sym = "X_ETHUSD_230630_1200"

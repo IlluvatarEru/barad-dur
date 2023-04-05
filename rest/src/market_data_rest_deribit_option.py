@@ -1,9 +1,6 @@
-import base64
 import datetime
-import hashlib
-import hmac
-import urllib
 
+import numpy as np
 import pandas as pd
 
 from core.src.column_names import PRICE, MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_PRICES, ASK_SIZES, \
@@ -161,6 +158,7 @@ class MarketDataRestApiDeribitOption(MarketDataRestApi):
         result = self._query_public(method="get_order_book", params={'instrument_name': ticker, "depth": n_levels},
                                     request_type=GET)
         data_ob = result[RESULT]
+        reference_price = data_ob['underlying_price']
 
         # Convert bids and asks to DataFrames
         bids_df = pd.DataFrame(data_ob[BIDS], columns=[PRICE, SIZE])
@@ -172,9 +170,9 @@ class MarketDataRestApiDeribitOption(MarketDataRestApi):
         asks_df[[PRICE, SIZE]] = asks_df[[PRICE, SIZE]].apply(pd.to_numeric)
 
         ob = pd.DataFrame(data=[[bids_df[SIZE].tolist()[:n_levels],
-                                 bids_df[PRICE].tolist()[:n_levels],
+                                 np.array(bids_df[PRICE].tolist()[:n_levels])*reference_price,
                                  asks_df[SIZE].tolist()[:n_levels],
-                                 asks_df[PRICE].tolist()[:n_levels]]],
+                                 np.array(asks_df[PRICE].tolist()[:n_levels])*reference_price]],
                           columns=[BID_SIZES, BID_PRICES, ASK_SIZES, ASK_PRICES])
         ob[SYM] = sym
         ob[MARKET] = self.market
