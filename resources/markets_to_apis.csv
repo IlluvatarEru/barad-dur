@@ -2,3 +2,4 @@ market,instrument_type,api_url
 KRAKEN,spot,api.kraken.com/0/
 KRAKEN,future,futures.kraken.com/
 BINANCE,spot,api.binance.com/api/v3/
+DERIBIT,option,deribit.com/api/v2/

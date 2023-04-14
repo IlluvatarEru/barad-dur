@@ -7,7 +7,7 @@ import requests
 
 from core.src.date import today_date
 from rest.src.api_utils import get_header_key_col, get_header_signature_col, get_api_url
-from rest.src.request_types import GET, make_request
+from rest.src.request_types import GET, make_request, dict_to_querystring
 
 
 class MarketDataRestApi(ABC):
@@ -80,9 +80,9 @@ class MarketDataRestApi(ABC):
         # the url is composed of the base url + the route to public if any + the endpoint itself
         url = self.api_url + self.public_path + method
         # @TODO: remove once we have a logger
-        print(f'\nurl={url}')
+        p = dict_to_querystring(params)
+        print(f'\nurl={url}?{p}')
         print(f'\nparams={params}')
-        print(f'\ndata={data}')
 
         response = make_request(self.session, url, timeout, headers, params, data, request_type)
 

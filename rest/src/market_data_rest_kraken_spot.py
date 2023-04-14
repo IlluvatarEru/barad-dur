@@ -13,7 +13,7 @@ from core.src.date import get_current_timestamp, today_date, MINUTES_PER_DAY, ti
     to_date
 from core.src.instrument_types import SPOT
 from core.src.markets import KRAKEN
-from core.src.spot_syms import split_currency_pair_into_lhs_rhs, BTC, check_currency_pair_spot
+from core.src.spot_syms import split_currency_pair_into_lhs_rhs, BTC, check_currency_pair_spot, ETH, USDT
 from rest.src.market_data_rest import MarketDataRestApi
 from rest.src.request_types import POST
 
@@ -63,14 +63,16 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         :param sym: str
         :return: str
         """
-
         sym = check_currency_pair_spot(sym)
         # Sometimes it is XBT sometimes BTC
         # needs Z prefix before fiat and X before crypto part
         crypto, fiat = split_currency_pair_into_lhs_rhs(sym)
         if crypto == BTC:
-            crypto = 'XBT'
-        sym = "X" + crypto + "Z" + fiat
+            crypto = "XBT"
+        if crypto in [ETH, "XBT"]:
+            sym = "X" + crypto + "Z" + fiat
+        elif crypto in [USDT]:
+            sym = crypto + "Z" + fiat
         return sym
 
     def format_sym_back(self, sym):
@@ -122,6 +124,7 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         :param response: session.response
         :return:
         """
+        # @TODO: not needed for now, implement later
         pass
 
     def get_ticker_info(self, sym):
@@ -237,7 +240,7 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         ohlc[[OPEN, CLOSE, HIGH, LOW]] = ohlc[[OPEN, CLOSE, HIGH, LOW]].apply(pd.to_numeric)
         return ohlc
 
-    def get_close(self, sym, d=today_date()):
+    def get_close(self, sym, d=today_date()+datetime.timedelta(days=-1  )):
         """
         Returns the closing price at date d for sym
 
