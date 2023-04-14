@@ -78,7 +78,7 @@ class TestKrakenSpot(unittest.TestCase):
         ohlc = kraken_spot_api.get_ohlc(ETHUSD)
         max_date = ohlc[TIME].max().date()
         self.assertEqual(type(max_date), datetime.date)
-        self.assertEqual(max_date, today_date())
+        self.assertEqual(max_date, today_date()+datetime.timedelta(days=-1  ))
 
         # test with a start date
         # Actually the Kraken endpoint is broken and it will just return data for the last 720 ticks,
@@ -93,7 +93,7 @@ class TestKrakenSpot(unittest.TestCase):
         max_date = ohlc[TIME].max().date()
         min_date = ohlc[TIME].min().date()
         self.assertEqual(type(max_date), datetime.date)
-        self.assertEqual(max_date, today_date())
+        self.assertEqual(max_date, today_date()+datetime.timedelta(days=-1  ))
         self.assertEqual(min_date, start_date)
 
         # check prices are >=0

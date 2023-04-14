@@ -14,7 +14,8 @@ root_folder.ROOT_FOLDER = dir_path + '/../../'
 
 from rest.src.market_data_rest_kraken_future import MarketDataRestApiKrakenFuture
 
-FUTURE_ETHUSD = FUT_ETHUSD_ + "230331"
+# @TODO: Fix, because if we are in the future then last date... maybe get sym dynamically
+FUTURE_ETHUSD = FUT_ETHUSD_ + "230630"
 
 
 class TestKrakenSpot(unittest.TestCase):

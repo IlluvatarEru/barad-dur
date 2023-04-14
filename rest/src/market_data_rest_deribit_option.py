@@ -170,9 +170,9 @@ class MarketDataRestApiDeribitOption(MarketDataRestApi):
         asks_df[[PRICE, SIZE]] = asks_df[[PRICE, SIZE]].apply(pd.to_numeric)
 
         ob = pd.DataFrame(data=[[bids_df[SIZE].tolist()[:n_levels],
-                                 np.array(bids_df[PRICE].tolist()[:n_levels])*reference_price,
+                                 np.array(bids_df[PRICE].tolist()[:n_levels]) * reference_price,
                                  asks_df[SIZE].tolist()[:n_levels],
-                                 np.array(asks_df[PRICE].tolist()[:n_levels])*reference_price]],
+                                 np.array(asks_df[PRICE].tolist()[:n_levels]) * reference_price]],
                           columns=[BID_SIZES, BID_PRICES, ASK_SIZES, ASK_PRICES])
         ob[SYM] = sym
         ob[MARKET] = self.market
@@ -217,12 +217,12 @@ class MarketDataRestApiDeribitOption(MarketDataRestApi):
         ohlc = ohlc[[TIME, OPEN, CLOSE, HIGH, LOW]]
         return ohlc
 
-    def get_close(self, sym, d=today_date()):
+    def get_close(self, sym, d=today_date() + datetime.timedelta(days=-1)):
         """
         Returns the closing price at date d for sym
 
         :param sym: str
-        :param d: timestamp
+        :param d: timestamp, by default yesterday
         :return: float
         """
         if type(d) != int:

@@ -86,7 +86,7 @@ class TestDeribitOption(unittest.TestCase):
         ohlc = deribit_option_api.get_ohlc(INSTRUMENT)
         max_date = ohlc[TIME].max().date()
         self.assertEqual(type(max_date), datetime.date)
-        self.assertEqual(max_date, today_date())
+        self.assertEqual(max_date, today_date() + datetime.timedelta(days=-1))
 
         # with a start date
         delta = datetime.timedelta(days=-100)
@@ -97,7 +97,7 @@ class TestDeribitOption(unittest.TestCase):
         max_date = ohlc[TIME].max().date()
         min_date = ohlc[TIME].min().date()
         self.assertEqual(type(max_date), datetime.date)
-        self.assertEqual(max_date, today_date())
+        self.assertEqual(max_date, today_date() + datetime.timedelta(days=-1))
         self.assertEqual(min_date, start_date)
 
         # check prices are >=0

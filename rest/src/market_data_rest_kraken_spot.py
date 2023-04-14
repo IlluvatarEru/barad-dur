@@ -240,7 +240,7 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         ohlc[[OPEN, CLOSE, HIGH, LOW]] = ohlc[[OPEN, CLOSE, HIGH, LOW]].apply(pd.to_numeric)
         return ohlc
 
-    def get_close(self, sym, d=today_date()):
+    def get_close(self, sym, d=today_date()+datetime.timedelta(days=-1  )):
         """
         Returns the closing price at date d for sym
 

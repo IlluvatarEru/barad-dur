@@ -235,7 +235,7 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         ohlc[[OPEN, CLOSE, HIGH, LOW]] = ohlc[[OPEN, CLOSE, HIGH, LOW]].apply(pd.to_numeric)
         return ohlc
 
-    def get_close(self, sym, d=today_date()):
+    def get_close(self, sym, d=today_date() + datetime.timedelta(days=-1)):
         """
         Returns the closing price at date d for sym
 
@@ -243,7 +243,7 @@ class MarketDataRestApiKrakenFuture(MarketDataRestApi):
         :param d: timestamp
         :return: float
         """
-        if d != today_date():
+        if d < today_date()+ datetime.timedelta(days=-1):
             raise Exception("Kraken Future OHLC method cannot look back.")
         start_date = today_date()
         ohlc = self.get_ohlc(sym)
