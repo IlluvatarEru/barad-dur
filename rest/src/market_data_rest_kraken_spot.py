@@ -63,14 +63,16 @@ class MarketDataRestApiKrakenSpot(MarketDataRestApi):
         :param sym: str
         :return: str
         """
-
-        sym = check_currency_pair_spot(sym)
+        sym = check_currency_pair(sym)
         # Sometimes it is XBT sometimes BTC
         # needs Z prefix before fiat and X before crypto part
         crypto, fiat = split_currency_pair_into_lhs_rhs(sym)
         if crypto == BTC:
-            crypto = 'XBT'
-        sym = "X" + crypto + "Z" + fiat
+            crypto = "XBT"
+        if crypto in [ETH, "XBT"]:
+            sym = "X" + crypto + "Z" + fiat
+        elif crypto in [USDT]:
+            sym = crypto + "Z" + fiat
         return sym
 
     def format_sym_back(self, sym):
