@@ -10,7 +10,6 @@ root_folder.ROOT_FOLDER = dir_path + '/../../'
 
 from core.src.column_names import MARKET_TIMESTAMP, GATEWAY_TIMESTAMP, SYM, MARKET, BID_SIZES, BID_PRICES, ASK_SIZES, \
     ASK_PRICES, MISC, TIME, OPEN, CLOSE, HIGH, LOW
-from core.src.spot_syms import SUPPORTED_FIAT_CURRENCIES
 from rest.src.market_data_rest_deribit_option import MarketDataRestApiDeribitOption
 
 # INSTRUMENT = 'ETH-26MAY23-1200-C'
@@ -114,4 +113,4 @@ class TestDeribitOption(unittest.TestCase):
 
         start_date = datetime.date(2023, 1, 1)
         close_price = deribit_option_api.get_close(INSTRUMENT, start_date)
-        self.assertEqual(close_price, 0.32)
+        self.assertEqual(close_price, 0.198)

@@ -25,7 +25,6 @@ def check_currency_pair_option(sym):
         raise_wrong_format_option(sym)
     spot = sym.split("_")[1]
     if spot not in SUPPORTED_CCY_PAIRS:
-        print(spot)
         raise Exception(f'Option {sym} has wrong format, currency pair {spot} not supported')
     return True
 
